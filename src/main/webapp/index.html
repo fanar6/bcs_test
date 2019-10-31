@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="./js/themes/material/easyui.css">
+    <link rel="stylesheet" type="text/css" href="./js/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="./js/themes/color.css">
+    <script type="text/javascript" src="./js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="./js/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="./js/easyui-lang-ru.js"></script>
+    <title>Test Page</title>
+</head>
+
+<script>
+    $(document).ready(function () {
+        $.extend($.fn.validatebox.defaults.rules, {
+            digit: {
+                validator: function (value, param) {
+                    return value.match(/^\d*\.?\d*$/);
+                },
+                message: 'Only digit.'
+            }
+        });
+
+        $('#stocks').datagrid({
+            columns: [[
+                {field: 'symbol', title: 'Акция', width: 150},
+                {field: 'volume', title: 'Объем', width: 150},
+                {
+                    field: 'delete', title: 'DEL',
+                    width: 40,
+                    formatter: function (value, row, index) {
+                        return '<img src="./js/themes/icons/cancel.png"  style="cursor: pointer;" alt="del">';
+                    }
+                }
+            ]],
+            data: [{
+                "symbol": "AAPL",
+                "volume": 50
+            },
+                {
+                    "symbol": "HOG",
+                    "volume": 10
+                },
+                {
+                    "symbol": "MDSO",
+                    "volume": 1
+                },
+                {
+                    "symbol": "IDRA",
+                    "volume": 1
+                },
+                {
+                    "symbol": "MRSN",
+                    "volume": 1
+                }],
+            onClickCell: function (index, field, value) {
+                if (field === 'delete') {
+                    $('#stocks').datagrid('deleteRow', index);
+                    send();
+                }
+            }
+        });
+
+        $('#allocations').datagrid({
+                columns: [[
+                    {field: 'sector', title: 'Сектор', width: 250},
+                    {field: 'assetValue', title: 'Текущая стоимость</br>акций в секторе', width: 150},
+                    {field: 'proportion', title: 'Процентное соотношение', width: 250,
+                        formatter: function (value, row, index) {
+                            return (parseFloat(value)*100.0).toFixed(5);
+                        }}
+                ]]
+            }
+        );
+
+        send();
+    });
+
+    function addstock() {
+        $('#stocks').datagrid('insertRow', {
+            row: {
+                symbol: $('#symbol').textbox('getText').toUpperCase(),
+                volume: $('#volume').textbox('getText')
+            }
+        });
+        send();
+
+    }
+
+    function send() {
+        var obj = {};
+        obj.stocks = $('#stocks').datagrid('getRows');
+        $('#allocations').datagrid('loading');
+        $('#send_json').text(JSON.stringify(obj));
+        $('#get_json').text("");
+        $.ajax({
+            url: "/allocations",
+            type: "POST",
+            data: JSON.stringify(obj),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                $('#get_json').text(JSON.stringify(data));
+                $('#value').text(data.value);
+                var allocations = $('#allocations');
+                allocations.datagrid('loadData', data.allocations);
+                allocations.datagrid('loaded');
+            }
+        });
+
+    }
+</script>
+<body>
+<div class="easyui-layout" style="width:1400px; height:800px;margin-left: auto;margin-right: auto;">
+    <div data-options="region:'center',split:true" style="width:550px;  padding: 30px;">
+        <div>
+            <table id="stocks" class="easyui-datagrid" title="Набор акций и объем" style="width:350px;height:400px"
+                   data-options="singleSelect:true,collapsible:true">
+            </table>
+        </div>
+        <div>
+            <div style="margin: 20px 0;">
+                <input id="symbol" class="easyui-textbox" data-options="prompt:'Имя акции...'"
+                       style="width:100px;height:26px;">
+                <input id="volume" class="easyui-textbox" data-options="prompt:'Количество...',
+                                                                            validType: 'digit'"
+                       style="width:100px;height:26px;">
+                <a id="btn_add" class="easyui-linkbutton" data-options="iconCls:'icon-add'" onclick="addstock()">Добавить акцию</a>
+            </div>
+        </div>
+        <div style="width: 200px;">
+            <a id="btn_calculate" class="easyui-linkbutton" data-options="iconCls:'icon-reload'" onclick="send()">Отправить запрос</a>
+        </div>
+    </div>
+    <div data-options="region:'east',split:true" style="width:800px; padding: 30px;">
+        <div>Суммарная стоимость набора акций <span id="value" style="font-weight: bold">0</span></div>
+        <div>
+            <table id="allocations" class="easyui-datagrid" title="Распределение по секторам"
+                   style="width:700px;height:400px"
+                   data-options="singleSelect:true,collapsible:true">
+            </table>
+        </div>
+    </div>
+    <div data-options="region:'south',split:true" style="height:220px;">
+        <div style="margin: 10px 5px">
+            <div style="font-weight: bold;">Отправлено:</div>
+            <div id="send_json"></div>
+        </div>
+        <div style="margin: 10px 5px">
+            <div style="font-weight: bold">Получено:</div>
+            <div id="get_json"></div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script type="text/javascript" src="./js/jquery-3.4.1.min.js"></script>
+    <title>Title</title>
+</head>
+<script>
+    $(document).ready(function () {
+        var n = 1000;
+        while(n<2000){
+              $.ajax({
+                url: "/add_quote",
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                type: "GET",
+                data: {"isin": "AAAA00" + (n%100) +"BBBB",
+                        "bid": n/10 * 0.1,
+                        "ask": n/5 * 0.1,
+                      }
+            });
+            n++;
+            }
+        })
+
+</script>
+<body>
+<div>
+    Страница посылает 1000 Quote's на сервер
+</div>
+</body>
+</html>
